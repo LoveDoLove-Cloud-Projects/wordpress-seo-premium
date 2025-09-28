@@ -27,7 +27,7 @@
 		"security": "https://www.wordpress-premium.org/security"
 	},
 	"require": {
-		"php": "^7.2.5 || ^8.0",
+		"php": "^7.4 || ^8.0",
 		"ext-filter": "*",
 		"ext-json": "*",
 		"composer/installers": "^2.0",

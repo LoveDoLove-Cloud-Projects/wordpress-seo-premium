@@ -28,7 +28,7 @@ class WPSEO_Premium {
 	 *
 	 * @var string
 	 */
-	public const PLUGIN_VERSION_NAME = '25.5';
+	public const PLUGIN_VERSION_NAME = '26.0';
 
 	/**
 	 * Machine readable version for determining whether an upgrade is needed.
@@ -409,7 +409,7 @@ class WPSEO_Premium {
 	 * @return array The HelpScout beacon settings array.
 	 */
 	public function filter_helpscout_beacon( $helpscout_settings ) {
-		$beacon_id = '1ae02e91-5865-4f13-b220-7daed946ba25';
+		$beacon_id = 'f1fb4002-bca7-488e-b3a4-7c67e635ef21';
 
 		$helpscout_settings['products'][] = WPSEO_Addon_Manager::PREMIUM_SLUG;
 

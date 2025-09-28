@@ -10,7 +10,7 @@
  *
  * @wordpress-plugin
  * Plugin Name: Yoast SEO Premium
- * Version:     25.5
+ * Version:     26.0
  * Plugin URI:  https://yoa.st/2jc
  * Description: The first true all-in-one SEO solution for WordPress, including on-page content analysis, XML sitemaps and much more.
  * Author:      Team Yoast
@@ -18,12 +18,12 @@
  * Text Domain: wordpress-seo-premium
  * Domain Path: /languages/
  * License:     GPL v3
- * Requires at least: 6.6
+ * Requires at least: 6.7
  * Requires PHP: 7.4
- * Requires Yoast SEO: 25.5
+ * Requires Yoast SEO: 26.0
  *
  * WC requires at least: 7.1
- * WC tested up to: 10.0
+ * WC tested up to: 10.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,54 +41,56 @@
 
 use Yoast\WP\SEO\Premium\Addon_Installer;
 
-$site_information = get_transient( 'wpseo_site_information' );
-if ( isset( $site_information->subscriptions ) && ( count( $site_information->subscriptions ) == 0 ) ) {
-delete_transient( 'wpseo_site_information' );
-delete_transient( 'wpseo_site_information_quick' );
-}
-
-add_filter( 'pre_http_request', function( $pre, $parsed_args, $url ){
-$site_information = (object) [
-'url' => NULL,
-'subscriptions' => []
-];
-
-$addons = [
-'yoast-seo-wordpress-premium',
-'yoast-seo-news',
-'yoast-seo-woocommerce',
-'yoast-seo-video',
-'yoast-seo-local'
-];
-
-foreach ( $addons as $slug ) {
-$site_information->subscriptions[] = (object) [
-'renewalUrl' => NULL,
-'expiryDate' => '+5 years',
-'product' => (object) [
-'name' => NULL,
-'version' => NULL,
-'slug' => $slug,
-'lastUpdated' => NULL,
-'storeUrl' => NULL,
-'changelog' => NULL
-]
-];
-}
-
-if ( strpos( $url, 'https://my.yoast.com/api/sites/current' ) !== false ) {
-return [
-'response' => [ 'code' => 200, 'message' => 'ОК' ],
-'body' => json_encode( $site_information )
-];
-} else {
-return $pre;
-}
-}, 10, 3 );
-
 if ( ! defined( 'WPSEO_PREMIUM_FILE' ) ) {
 	define( 'WPSEO_PREMIUM_FILE', __FILE__ );
 }
+
+$site_information = get_transient( 'wpseo_site_information' );
+if ( isset( $site_information->subscriptions ) && ( count( $site_information->subscriptions ) === 0 ) ) {
+	delete_transient( 'wpseo_site_information' );
+	delete_transient( 'wpseo_site_information_quick' );
+}
+
+add_filter(
+	'pre_http_request',
+	function ( $pre, $parsed_args, $url ) {
+		$site_information = (object) array(
+			'url'           => home_url(),
+			'subscriptions' => array(),
+		);
+
+		$addons = array( 'yoast-seo-wordpress-premium', 'yoast-seo-news', 'yoast-seo-woocommerce', 'yoast-seo-video', 'yoast-seo-local' );
+
+		foreach ( $addons as $slug ) {
+			$site_information->subscriptions[] = (object) array(
+				'renewalUrl' => null,
+				'expiryDate' => '+5 years',
+				'product'    => (object) array(
+					'name'        => null,
+					'version'     => null,
+					'slug'        => $slug,
+					'lastUpdated' => null,
+					'storeUrl'    => null,
+					'changelog'   => null,
+				),
+			);
+		}
+
+		if ( strpos( $url, 'https://my.yoast.com/api/sites/current' ) !== false ) {
+			return array(
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'body'     => json_encode( $site_information ),
+			);
+		} else {
+			return $pre;
+		}
+	},
+	10,
+	3
+);
 
 if ( ! defined( 'WPSEO_PREMIUM_PATH' ) ) {
 	define( 'WPSEO_PREMIUM_PATH', plugin_dir_path( WPSEO_PREMIUM_FILE ) );
@@ -102,7 +104,7 @@ if ( ! defined( 'WPSEO_PREMIUM_BASENAME' ) ) {
  * {@internal Nobody should be able to overrule the real version number as this can cause
  *            serious issues with the options, so no if ( ! defined() ).}}
  */
-define( 'WPSEO_PREMIUM_VERSION', '25.5' );
+define( 'WPSEO_PREMIUM_VERSION', '26.0' );
 
 // Initialize Premium autoloader.
 $wpseo_premium_dir               = WPSEO_PREMIUM_PATH;
@@ -122,4 +124,4 @@ if ( ! wp_installing() ) {
 	YoastSEOPremium();
 }
 
-register_activation_hook( WPSEO_PREMIUM_FILE, [ 'WPSEO_Premium', 'install' ] );
+register_activation_hook( WPSEO_PREMIUM_FILE, array( 'WPSEO_Premium', 'install' ) );
