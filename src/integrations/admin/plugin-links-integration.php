@@ -56,11 +56,6 @@ class Plugin_Links_Integration implements Integration_Interface {
 	 */
 	public function add_yoast_seo_premium_action_link( $links ) {
 		$addon_manager = new WPSEO_Addon_Manager();
-
-		if ( ! $addon_manager->has_valid_subscription( WPSEO_Addon_Manager::PREMIUM_SLUG ) ) {
-			\array_unshift( $links, $this->get_upgrade_link() );
-		}
-
 		return $links;
 	}
 

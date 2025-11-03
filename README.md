@@ -26,18 +26,23 @@ This is the **fully activated pro version ("nulled")** of the **Yoast SEO Premiu
 
 ## Changelog
 
-**Released:** September 23rd, 2025
+## v26.2
 
-### Bugfixes
+**Released:** October 21, 2025
 
-* Fixes a bug where a redirect could not be removed if it included our own redirect routes.
-* Fixes a bug where a string from the usage counter tooltip for AI features was missing in RTL languages.
-* Fixes a bug where the filter and search values would be persistent when switching tabs in the redirects page.
+### Enhancements
+
+* Makes the HelpScout Beacon in the `Support` page accessible to all users with any valid plan, regardless of the add-ons they have installed/activated.
 
 ### Other
 
-* Bumps the minimum required version of Yoast SEO to 26.0.
-* Fixes a security defect where users with `edit_posts` capabilities (Contributor+) could execute stored cross-site scripting if the plugin's AI feature was enabled. Props to [stealthcopter](https://github.com/stealthcopter).
+* Bumps the minimum required version of Yoast SEO to 26.2.
+
+## v26.1
+
+**Released:** October 7, 2025
+
+- Yoast SEO 26.1 brings more enhancements and bug fixes.
 
 ---
 

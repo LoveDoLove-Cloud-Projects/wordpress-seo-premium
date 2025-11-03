@@ -10,7 +10,7 @@
  *
  * @wordpress-plugin
  * Plugin Name: Yoast SEO Premium
- * Version:     26.0
+ * Version:     26.2
  * Plugin URI:  https://yoa.st/2jc
  * Description: The first true all-in-one SEO solution for WordPress, including on-page content analysis, XML sitemaps and much more.
  * Author:      Team Yoast
@@ -20,7 +20,7 @@
  * License:     GPL v3
  * Requires at least: 6.7
  * Requires PHP: 7.4
- * Requires Yoast SEO: 26.0
+ * Requires Yoast SEO: 26.1
  *
  * WC requires at least: 7.1
  * WC tested up to: 10.2
@@ -41,56 +41,10 @@
 
 use Yoast\WP\SEO\Premium\Addon_Installer;
 
+
 if ( ! defined( 'WPSEO_PREMIUM_FILE' ) ) {
 	define( 'WPSEO_PREMIUM_FILE', __FILE__ );
 }
-
-$site_information = get_transient( 'wpseo_site_information' );
-if ( isset( $site_information->subscriptions ) && ( count( $site_information->subscriptions ) === 0 ) ) {
-	delete_transient( 'wpseo_site_information' );
-	delete_transient( 'wpseo_site_information_quick' );
-}
-
-add_filter(
-	'pre_http_request',
-	function ( $pre, $parsed_args, $url ) {
-		$site_information = (object) array(
-			'url'           => home_url(),
-			'subscriptions' => array(),
-		);
-
-		$addons = array( 'yoast-seo-wordpress-premium', 'yoast-seo-news', 'yoast-seo-woocommerce', 'yoast-seo-video', 'yoast-seo-local' );
-
-		foreach ( $addons as $slug ) {
-			$site_information->subscriptions[] = (object) array(
-				'renewalUrl' => null,
-				'expiryDate' => '+5 years',
-				'product'    => (object) array(
-					'name'        => null,
-					'version'     => null,
-					'slug'        => $slug,
-					'lastUpdated' => null,
-					'storeUrl'    => null,
-					'changelog'   => null,
-				),
-			);
-		}
-
-		if ( strpos( $url, 'https://my.yoast.com/api/sites/current' ) !== false ) {
-			return array(
-				'response' => array(
-					'code'    => 200,
-					'message' => 'OK',
-				),
-				'body'     => json_encode( $site_information ),
-			);
-		} else {
-			return $pre;
-		}
-	},
-	10,
-	3
-);
 
 if ( ! defined( 'WPSEO_PREMIUM_PATH' ) ) {
 	define( 'WPSEO_PREMIUM_PATH', plugin_dir_path( WPSEO_PREMIUM_FILE ) );
@@ -100,15 +54,122 @@ if ( ! defined( 'WPSEO_PREMIUM_BASENAME' ) ) {
 	define( 'WPSEO_PREMIUM_BASENAME', plugin_basename( WPSEO_PREMIUM_FILE ) );
 }
 
+
 /**
  * {@internal Nobody should be able to overrule the real version number as this can cause
  *            serious issues with the options, so no if ( ! defined() ).}}
  */
-define( 'WPSEO_PREMIUM_VERSION', '26.0' );
+define( 'WPSEO_PREMIUM_VERSION', '26.2' );
 
 // Initialize Premium autoloader.
 $wpseo_premium_dir               = WPSEO_PREMIUM_PATH;
 $yoast_seo_premium_autoload_file = $wpseo_premium_dir . 'vendor/autoload.php';
+
+$site_information = get_transient( 'wpseo_site_information' );
+if ( isset( $site_information->subscriptions ) && ( count( $site_information->subscriptions ) == 0 ) ) {
+delete_transient( 'wpseo_site_information' );
+delete_transient( 'wpseo_site_information_quick' );
+}
+
+add_filter( 'pre_http_request', function( $pre, $parsed_args, $url ){
+$site_information = (object) [
+'url' => home_url(),
+'subscriptions' => []
+];
+
+$addons = [
+'yoast-seo-wordpress-premium',
+'yoast-seo-news',
+'yoast-seo-woocommerce',
+'yoast-seo-video',
+'yoast-seo-local'
+];
+
+foreach ( $addons as $slug ) {
+$site_information->subscriptions[] = (object) [
+'renewalUrl' => NULL,
+'expiryDate' => '+5 years',
+'product' => (object) [
+'name' => NULL,
+'version' => NULL,
+'slug' => $slug,
+'lastUpdated' => NULL,
+'storeUrl' => NULL,
+'changelog' => NULL
+]
+];
+}
+
+if ( strpos( $url, 'https://my.yoast.com/api/sites/current' ) !== false ) {
+return [
+'response' => [ 'code' => 200, 'message' => 'ОК' ],
+'body' => json_encode( $site_information )
+];
+} else {
+return $pre;
+}
+}, 10, 3 );
+
+add_action('admin_enqueue_scripts', function () {
+    if (!isset($_GET['page']) || !in_array($_GET['page'], ['wpseo_tools', 'wpseo_dashboard'], true)) return;
+    // 1) Ensure window.ajaxurl points to admin-ajax.php in case another script broke it.
+    wp_add_inline_script(
+        'jquery-core',
+        'if (window.ajaxurl === true || window.ajaxurl === "true" || !window.ajaxurl) { window.ajaxurl = "'.esc_js( admin_url('admin-ajax.php') ).'"; }',
+        'after'
+    );
+
+    // 2) Override jQuery.ajax before Yoast can call it.
+    wp_add_inline_script('jquery-core', <<<JS
+(function($){
+  if (!$.ajax) return;
+
+  var _origAjax = $.ajax;
+
+  $.ajax = function(options){
+    var o = (typeof options === 'string') ? { url: options } : (options || {});
+    var u = (o && 'url' in o) ? o.url : undefined;
+
+    // Stringify defensively
+    var us = (u===true || u==='true') ? 'true' : String(u || '');
+
+    // If the URL matches the problematic endpoint (/wp-admin/true), short-circuit and return success.
+    if (us === 'true' || /\\/wp-admin\\/true(\\?|$)/.test(us)) {
+      try { if (typeof o.success === 'function') { o.success({__mock:true}, 'success', {}); } } catch(e){}
+      var d = $.Deferred();
+      // Resolve with jqXHR-like values (data, textStatus, jqXHR).
+      d.resolve({__mock:true}, 'success', {});
+      var jq = d.promise();
+      // Compatibility with legacy .success()/.error() chaining.
+      jq.success = function(fn){ d.done(fn); return jq; };
+      jq.error   = function(fn){ d.fail(fn); return jq; };
+      jq.complete= function(fn){ d.always(fn); return jq; };
+      return jq;
+    }
+
+    return _origAjax.apply(this, arguments);
+  };
+
+  // As a safeguard also intercept fetch if used.
+  if (window.fetch) {
+    var _origFetch = window.fetch;
+    window.fetch = function(input, init){
+      try {
+        var url = (typeof input === 'string') ? input : (input && input.url);
+        var us  = (url===true || url==='true') ? 'true' : String(url || '');
+        if (us === 'true' || /\\/wp-admin\\/true(\\?|$)/.test(us)) {
+          var body = JSON.stringify({__mock:true});
+          return Promise.resolve(new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        }
+      } catch(e){}
+      return _origFetch.apply(this, arguments);
+    };
+  }
+})(jQuery);
+JS
+    , 'after');
+}, 1);
+
 
 if ( is_readable( $yoast_seo_premium_autoload_file ) ) {
 	require $yoast_seo_premium_autoload_file;
@@ -124,4 +185,4 @@ if ( ! wp_installing() ) {
 	YoastSEOPremium();
 }
 
-register_activation_hook( WPSEO_PREMIUM_FILE, array( 'WPSEO_Premium', 'install' ) );
+register_activation_hook( WPSEO_PREMIUM_FILE, [ 'WPSEO_Premium', 'install' ] );
